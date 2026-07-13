@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.endpoint.rest.controller.ImageRequest;
 import com.example.demo.mail.Email;
 import com.example.demo.mail.Mailer;
 import com.example.demo.repository.ImageSubmissionRepository;
@@ -8,19 +9,18 @@ import jakarta.mail.internet.InternetAddress;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -33,41 +33,44 @@ public class ImageService {
   private final S3Conf s3Conf;
   private final S3Client s3Client;
   private final Mailer mailer;
-  private final Tika tika;
   private final ImageService self;
 
-  private static final List<String> ALLOWED_TYPES = List.of("image/jpeg", "image/png");
+  private static final Pattern DATA_URI_PATTERN =
+      Pattern.compile("^data:image/(png|jpeg);base64,(.+)$");
 
   public ImageService(
       ImageSubmissionRepository repository,
       S3Conf s3Conf,
       S3Client s3Client,
       Mailer mailer,
-      Tika tika,
       @Lazy @Autowired ImageService self) {
     this.repository = repository;
     this.s3Conf = s3Conf;
     this.s3Client = s3Client;
     this.mailer = mailer;
-    this.tika = tika;
     this.self = self;
   }
 
-  public String save(MultipartFile file, String email) throws IOException {
-    var mimeType = tika.detect(file.getInputStream());
-    if (!ALLOWED_TYPES.contains(mimeType)) {
-      throw new IllegalArgumentException("Only JPEG and PNG images are allowed");
+  public String save(ImageRequest request) {
+    var matcher = DATA_URI_PATTERN.matcher(request.file());
+    if (!matcher.matches()) {
+      throw new IllegalArgumentException("Only JPEG and PNG images are allowed (data URI format)");
     }
+
+    var format = matcher.group(1);
+    var base64Data = matcher.group(2);
+    var imageBytes = Base64.getDecoder().decode(base64Data);
+    var fileName = request.fileName() != null ? request.fileName() : "image." + format;
 
     var id = UUID.randomUUID().toString();
     var submission = new ImageSubmission();
     submission.setId(id);
-    submission.setFileName(file.getOriginalFilename());
-    submission.setEmail(email);
+    submission.setFileName(fileName);
+    submission.setEmail(request.email());
     submission.setCreatedAt(Instant.now());
     repository.save(submission);
 
-    self.processImage(id, file.getBytes(), file.getOriginalFilename(), email);
+    self.processImage(id, imageBytes, fileName, request.email());
 
     return id;
   }
