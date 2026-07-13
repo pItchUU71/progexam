@@ -4,26 +4,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.example.demo.conf.FacadeIT;
-import com.example.demo.repository.ImageSubmissionRepository;
-import com.example.demo.repository.model.ImageSubmission;
-import java.time.Instant;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 class ImageControllerTest extends FacadeIT {
 
   @Autowired private TestRestTemplate restTemplate;
-  @Autowired private ImageSubmissionRepository repository;
 
   @Test
   void post_and_get_images() {
@@ -36,7 +30,7 @@ class ImageControllerTest extends FacadeIT {
       }
     });
 
-    var headers = new org.springframework.http.HttpHeaders();
+    var headers = new HttpHeaders();
     headers.setContentType(MediaType.MULTIPART_FORM_DATA);
     var requestEntity = new HttpEntity<>(body, headers);
 

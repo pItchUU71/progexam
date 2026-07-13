@@ -3,6 +3,7 @@ package com.example.demo.endpoint.rest.controller;
 import com.example.demo.repository.ImageSubmissionRepository;
 import com.example.demo.repository.model.ImageSubmission;
 import com.example.demo.service.ImageService;
+import java.io.IOException;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +24,11 @@ public class ImageController {
   public ResponseEntity<String> uploadImage(
       @RequestParam("email") String email,
       @RequestParam("file") MultipartFile file) {
-    imageService.save(file, email);
+    try {
+      imageService.save(file, email);
+    } catch (IOException e) {
+      return ResponseEntity.badRequest().body("Invalid file");
+    }
     return ResponseEntity.ok("OK");
   }
 

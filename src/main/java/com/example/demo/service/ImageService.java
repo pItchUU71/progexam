@@ -5,22 +5,19 @@ import com.example.demo.mail.Mailer;
 import com.example.demo.repository.ImageSubmissionRepository;
 import com.example.demo.repository.model.ImageSubmission;
 import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.AddressException;
-import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import javax.imageio.ImageIO;
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,7 +26,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Service
-@AllArgsConstructor
 @Slf4j
 public class ImageService {
 
@@ -38,8 +34,22 @@ public class ImageService {
   private final S3Client s3Client;
   private final Mailer mailer;
   private final Tika tika = new Tika();
+  private final ImageService self;
 
   private static final List<String> ALLOWED_TYPES = List.of("image/jpeg", "image/png");
+
+  public ImageService(
+      ImageSubmissionRepository repository,
+      S3Conf s3Conf,
+      S3Client s3Client,
+      Mailer mailer,
+      @Lazy @Autowired ImageService self) {
+    this.repository = repository;
+    this.s3Conf = s3Conf;
+    this.s3Client = s3Client;
+    this.mailer = mailer;
+    this.self = self;
+  }
 
   public String save(MultipartFile file, String email) throws IOException {
     var mimeType = tika.detect(file.getInputStream());
@@ -55,7 +65,7 @@ public class ImageService {
     submission.setCreatedAt(Instant.now());
     repository.save(submission);
 
-    processImage(id, file.getBytes(), file.getOriginalFilename(), email);
+    self.processImage(id, file.getBytes(), file.getOriginalFilename(), email);
 
     return id;
   }
@@ -73,7 +83,10 @@ public class ImageService {
       var s3Key = "bw-" + id + "." + formatName;
       uploadToS3(s3Key, baos.toByteArray());
 
-      var s3Url = s3Client.utilities().getUrl(builder -> builder.bucket(s3Conf.getBucketName()).key(s3Key));
+      var s3Url =
+          s3Client
+              .utilities()
+              .getUrl(builder -> builder.bucket(s3Conf.getBucketName()).key(s3Key));
       sendEmailWithLink(email, s3Url.toString());
 
     } catch (Exception e) {
@@ -82,7 +95,8 @@ public class ImageService {
   }
 
   private BufferedImage toBlackAndWhite(BufferedImage original) {
-    var bw = new BufferedImage(original.getWidth(), original.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+    var bw =
+        new BufferedImage(original.getWidth(), original.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
     bw.getGraphics().drawImage(original, 0, 0, null);
     return bw;
   }
