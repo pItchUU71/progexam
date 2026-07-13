@@ -33,7 +33,7 @@ public class ImageService {
   private final S3Conf s3Conf;
   private final S3Client s3Client;
   private final Mailer mailer;
-  private final Tika tika = new Tika();
+  private final Tika tika;
   private final ImageService self;
 
   private static final List<String> ALLOWED_TYPES = List.of("image/jpeg", "image/png");
@@ -43,11 +43,13 @@ public class ImageService {
       S3Conf s3Conf,
       S3Client s3Client,
       Mailer mailer,
+      Tika tika,
       @Lazy @Autowired ImageService self) {
     this.repository = repository;
     this.s3Conf = s3Conf;
     this.s3Client = s3Client;
     this.mailer = mailer;
+    this.tika = tika;
     this.self = self;
   }
 
