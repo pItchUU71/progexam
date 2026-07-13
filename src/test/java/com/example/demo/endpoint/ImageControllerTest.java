@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.ses.SesClient;
 
 class ImageControllerTest extends FacadeIT {
 
@@ -29,6 +30,7 @@ class ImageControllerTest extends FacadeIT {
 
   @MockBean private Tika tika;
   @MockBean private S3Client s3Client;
+  @MockBean private SesClient sesClient;
 
   @Test
   void post_and_get_images() throws IOException {
