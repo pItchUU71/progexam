@@ -1,5 +1,7 @@
 package com.example.demo.endpoint.rest.controller;
 
+import com.example.demo.endpoint.event.EventProducer;
+import com.example.demo.endpoint.event.model.ImageSubmitted;
 import com.example.demo.repository.ImageSubmissionRepository;
 import com.example.demo.repository.model.ImageSubmission;
 import com.example.demo.service.ImageService;
@@ -19,11 +21,19 @@ public class ImageController {
 
   private final ImageService imageService;
   private final ImageSubmissionRepository repository;
+  private final EventProducer eventProducer;
 
   @PostMapping("/images")
   public ResponseEntity<String> uploadImage(@RequestBody ImageRequest request) {
     try {
-      imageService.save(request);
+      var result = imageService.save(request);
+      var event =
+          ImageSubmitted.builder()
+              .id(result.id())
+              .email(result.email())
+              .format(result.format())
+              .build();
+      eventProducer.accept(List.of(event));
       return ResponseEntity.ok("OK");
     } catch (Exception e) {
       log.error("POST /images failed", e);

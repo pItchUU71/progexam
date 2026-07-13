@@ -16,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.ses.SesClient;
 
@@ -25,6 +26,7 @@ class ImageControllerTest extends FacadeIT {
 
   @MockBean private S3Client s3Client;
   @MockBean private SesClient sesClient;
+  @MockBean private EventBridgeClient eventBridgeClient;
 
   @Test
   void post_and_get_images() {
