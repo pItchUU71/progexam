@@ -1,3 +1,8 @@
 package com.example.demo.endpoint.rest.controller;
 
-public record ImageRequest(String email, String file, String fileName) {}
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public record ImageRequest(
+    @JsonProperty("email") String email,
+    @JsonProperty("file") String file,
+    @JsonProperty("fileName") String fileName) {}

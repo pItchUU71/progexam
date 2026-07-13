@@ -30,6 +30,10 @@ java {
     targetCompatibility = '21'
 }
 
+tasks.withType(JavaCompile) {
+    options.compilerArgs << '-parameters'
+}
+
 configurations {
     compileOnly {
         extendsFrom annotationProcessor
